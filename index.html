@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pujor Poth</title>
+<style>
+  body {
+    margin: 0;
+    background: #0a0a12;
+    color: #fff;
+    font-family: sans-serif;
+    text-align: center;
+    padding-top: 20px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  h1 { color: #ffb703; margin-bottom: 5px; }
+  p.tagline { color: #aaa; margin-top: 0; margin-bottom: 30px; }
+
+  .route-btn {
+    display: block;
+    width: 80%;
+    margin: 15px auto;
+    padding: 18px;
+    font-size: 18px;
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-weight: bold;
+  }
+  .saptami { background: #1e8f4e; }
+  .astami  { background: #1565c0; }
+  .nabami  { background: #c62828; }
+
+  .back-btn {
+    margin: 20px auto 8px;
+    padding: 10px 20px;
+    background: #333;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    display: block;
+  }
+  .next-btn {
+    margin: 8px auto 20px;
+    padding: 14px 24px;
+    background: #ffb703;
+    color: #0a0a12;
+    border: none;
+    border-radius: 10px;
+    display: block;
+    font-weight: bold;
+    font-size: 16px;
+  }
+
+  #screen-route, #screen-para, #screen-travel { display: none; }
+
+  svg { width: 100%; max-width: 500px; }
+  .route-line {
+    fill: none;
+    stroke-width: 5;
+    stroke-linecap: round;
+    stroke-dasharray: 12 8;
+    animation: flow 1.5s linear infinite;
+  }
+  @keyframes flow { to { stroke-dashoffset: -40; } }
+  .marker { stroke: #fff; stroke-width: 2; cursor: pointer; }
+  .marker-glow { filter: drop-shadow(0 0 6px currentColor); }
+  .marker-label { fill: #fff; font-size: 13px; }
+
+  #para-photo {
+    width: 85%;
+    max-width: 320px;
+    border-radius: 14px;
+    margin-top: 15px;
+    border: 3px solid #ffb703;
+  }
+  #para-name { color: #ffb703; margin: 15px 0 5px; }
+  .mike-icon {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: #ffb703;
+    border: none;
+    font-size: 30px;
+    margin: 20px auto 5px;
+    display: block;
+    pointer-events: none;
+  }
+  .mike-icon.playing { animation: pulse 1s infinite; }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255,183,3,0.7); }
+    70% { box-shadow: 0 0 0 20px rgba(255,183,3,0); }
+    100% { box-shadow: 0 0 0 0 rgba(255,183,3,0); }
+  }
+
+  .food-box {
+    width: 80%;
+    max-width: 300px;
+    margin: 20px auto;
+    background: #1a1a2e;
+    border-radius: 12px;
+    padding: 12px 15px;
+    text-align: left;
+    display: none;
+  }
+  .food-box h4 { margin: 0 0 8px 0; color: #ffb703; }
+  .food-item { padding: 4px 0; font-size: 15px; }
+
+  #screen-para.zoom-in { animation: zoomIn 0.4s ease-out; }
+  @keyframes zoomIn {
+    from { transform: scale(0.75); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+
+  #screen-travel { padding-top: 40vh; }
+  .travel-path {
+    width: 260px;
+    height: 6px;
+    background: #222;
+    border-radius: 4px;
+    margin: 0 auto 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .travel-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ffb703;
+    position: absolute;
+    top: -6px;
+    left: -18px;
+    box-shadow: 0 0 10px #ffb703;
+    animation: travelMove 0.9s ease-in-out forwards;
+  }
+  @keyframes travelMove {
+    from { left: -18px; }
+    to   { left: 260px; }
+  }
+  .travel-text { color: #ffb703; font-size: 16px; }
+</style>
+</head>
+<body>
+
+  <div id="screen-map">
+    <h1>🪔 PUJOR POTH</h1>
+    <p class="tagline">পথে পথে পুজোর গল্প</p>
+    <button class="route-btn saptami" onclick="showRoute('saptami')">🟢 Saptamir Poth</button>
+    <button class="route-btn astami" onclick="showRoute('astami')">🔵 Astamir Poth</button>
+    <button class="route-btn nabami" onclick="showRoute('nabami')">🔴 Nabamir Poth</button>
+  </div>
+
+  <div id="screen-route">
+    <h2 id="route-title"></h2>
+    <div id="map-container"></div>
+    <button class="back-btn" onclick="goBack()">⬅ Map-এ ফিরো</button>
+  </div>
+
+  <div id="screen-travel">
+    <div class="travel-path">
+      <div class="travel-dot" id="travel-dot"></div>
+    </div>
+    <p class="travel-text" id="travel-text">পরের পাড়ায় যাচ্ছি...</p>
+  </div>
+
+  <div id="screen-para">
+    <h2 id="para-name"></h2>
+    <img id="para-photo" src="" alt="">
+    <div class="mike-icon playing" id="mike-icon">📢</div>
+    <p id="mike-status" style="color:#aaa;">🎶 গান বাজছে...</p>
+
+    <div class="food-box" id="food-box">
+      <h4>🍴 এখানে যা পাওয়া যাবে</h4>
+      <div class="food-item">🌯 Egg Roll</div>
+      <div class="food-item">🍜 Chowmein</div>
+      <div class="food-item">🍦 Ice Cream</div>
+      <div class="food-item">🌶️ Fuchka</div>
+    </div>
+
+    <audio id="para-audio"></audio>
+    <button class="next-btn" id="next-btn" onclick="goToNextPara()">পরের পাড়া ➡</button>
+    <button class="back-btn" onclick="closePara()">⬅ Route-এ ফিরো</button>
+  </div>
+
+  <script>
+    const routes = {
+      saptami: { color:"#1e8f4e", title:"🟢 Saptamir Poth",
+        paras:[
+          {name:"Garikhana", img:"images/garikhana.png", song:"audio/garikhana.mp3", food:true},
+          {name:"Alangidanga", img:"images/alangidanga.png", song:"audio/alangidanga.mp3", food:true},
+          {name:"Devimela", img:"images/devimela.png", song:"audio/devimela.mp3", food:false},
+          {name:"Dhobghata", img:"images/dhobghata.png", song:"audio/dhobghata.mp3", food:true},
+          {name:"Napitpara", img:"images/napitpara.png", song:"audio/napitpara.mp3", food:false},
+          {name:"Chasapara", img:"images/chasapara.png", song:"audio/chasapara.mp3", food:false},
+          {name:"Sarkarpara", img:"images/sarkarpara.png", song:"audio/sarkarpara.mp3", food:false},
+          {name:"Jeliapara", img:"images/jeliapara.png", song:"audio/jeliapara.mp3", food:true},
+          {name:"Amlapara", img:"images/amlapara.png", song:"audio/amlapara.mp3", food:false},
+          {name:"Darjipara", img:"images/darjipara.png", song:"audio/darjipara.mp3", food:false}
+        ] },
+
+      astami: { color:"#1565c0", title:"🔵 Astamir Poth",
+        paras:[
+          {name:"Sadarpara", img:"images/sadarpara.jpg", song:"audio/sadarpara.mp3", food:false},
+          {name:"Union Club", img:"images/unionclub.png", song:"audio/unionclub.mp3", food:false},
+          {name:"Huchukpara", img:"images/huchukpara.png", song:"audio/huchukpara.mp3", food:false},
+          {name:"Cocks Compound", img:"images/cockscompound.png", song:"audio/cockscompound.mp3", food:false},
+          {name:"Amdhia", img:"images/amdhia.jpg", song:"audio/amdhia.mp3", food:true},
+          {name:"Nadhia", img:"images/nadhia.jpg", song:"audio/nadhia.mp3", food:true},
+          {name:"Dulmi", img:"images/dulmi.jpg", song:"audio/dulmi.mp3", food:true},
+          {name:"Ketika", img:"images/ketika.png", song:"audio/ketika.mp3", food:true},
+          {name:"B. B. Das Road", img:"images/bbdasroad.png", song:"audio/bbdasroad.mp3", food:false},
+          {name:"Madhyabazar", img:"images/madhyabazar.png", song:"audio/madhyabazar.mp3", food:false},
+          {name:"Chowkbazar", img:"images/chowkbazar.png", song:"audio/chowkbazar.mp3", food:false}
+        ] },
+
+      nabami: { color:"#c62828", title:"🔴 Nabamir Poth",
+        paras:[
+          {name:"Jeliapara", img:"images/jeliapara.png", song:"audio/jeliapara.mp3", food:true},
+          {name:"Chittaranjan Club", img:"images/chittaranjanclub.png", song:"audio/chittaranjanclub.mp3", food:false},
+          {name:"Namopara", img:"images/namopara.png", song:"audio/namopara.mp3", food:false},
+          {name:"Bhagabandhpara", img:"images/bhagabandhpara.jpg", song:"audio/bhagabandhpara.mp3", food:false},
+          {name:"Nilkhutidanga", img:"images/nilkhutidanga.png", song:"audio/nilkhutidanga.mp3", food:false},
+          {name:"Radhakrishna More", img:"images/radhakrishnamore.png", song:"audio/radhakrishnamore.mp3", food:false},
+          {name:"Dakbanglow", img:"images/dakbanglow.png", song:"audio/dakbanglow.mp3", food:true},
+          {name:"Stationpara", img:"images/stationpara.jpg", song:"audio/stationpara.mp3", food:false},
+          {name:"Locoshedpara", img:"images/locoshedpara.png", song:"audio/locoshedpara.mp3", food:true},
+          {name:"Telkalpara", img:"images/telkalpara.png", song:"audio/telkalpara.mp3", food:true},
+          {name:"Dhobghata", img:"images/dhobghata.png", song:"audio/dhobghata.mp3", food:false},
+          {name:"Napitpara", img:"images/napitpara.png", song:"audio/napitpara.mp3", food:false}
+        ] }
+    };
+
+    let currentRouteKey = null;
+    let currentIndex = 0;
+
+    function slugify(name) {
+      return name.toLowerCase().replace(/[^a-z0-9]/g, "");
+    }
+
+    function showRoute(key) {
+      currentRouteKey = key;
+      const data = routes[key];
+      document.getElementById('route-title').innerText = data.title;
+
+      const n = data.paras.length;
+      const spacingY = 80;
+      const height = n * spacingY + 40;
+
+      let points = [];
+      for (let i = 0; i < n; i++) {
+        const p = data.paras[i];
+        const name = (typeof p === "string") ? p : p.name;
+        const x = (i % 2 === 0) ? 90 : 230;
+        const y = 40 + i * spacingY;
+        points.push({x, y, name, index: i});
+      }
+
+      let d = "M " + points[0].x + " " + points[0].y;
+      for (let i = 1; i < points.length; i++) {
+        const midY = (points[i-1].y + points[i].y) / 2;
+        d += " C " + points[i-1].x + " " + midY + ", " + points[i].x + " " + midY + ", " + points[i].x + " " + points[i].y;
+      }
+
+      let markersHtml = "";
+      points.forEach(function(p) {
+        const labelX = (p.x < 160) ? p.x - 15 : p.x + 15;
+        const anchor = (p.x < 160) ? "end" : "start";
+        markersHtml += '<circle class="marker marker-glow" style="color:' + data.color + '" cx="' + p.x + '" cy="' + p.y + '" r="10" fill="' + data.color + '" onclick="openParaAt(' + p.index + ')"></circle>';
+        markersHtml += '<text class="marker-label" x="' + labelX + '" y="' + (p.y + 4) + '" text-anchor="' + anchor + '">' + p.name + '</text>';
+      });
+
+      const svg = '<svg viewBox="0 0 320 ' + height + '">' +
+        '<path class="route-line" d="' + d + '" stroke="' + data.color + '"></path>' +
+        markersHtml + '</svg>';
+
+      document.getElementById('map-container').innerHTML = svg;
+      document.getElementById('screen-map').style.display = 'none';
+      document.getElementById('screen-route').style.display = 'block';
+    }
+
+    function openParaAt(index, withZoom) {
+      currentIndex = index;
+      const list = routes[currentRouteKey].paras;
+      const p = list[index];
+      const isObj = (typeof p !== "string");
+      const name = isObj ? p.name : p;
+      const slug = slugify(name);
+      const imgSrc = isObj ? p.img : ("images/" + slug + ".jpg");
+      const songSrc = isObj ? p.song : ("audio/" + slug + ".mp3");
+
+      document.getElementById('para-name').innerText = "🛕 " + name;
+      document.getElementById('para-photo').src = imgSrc;
+
+      const audio = document.getElementById('para-audio');
+      audio.src = songSrc;
+      audio.currentTime = 0;
+      audio.play().catch(function(){});
+
+      document.getElementById('mike-icon').classList.add('playing');
+      document.getElementById('mike-status').innerText = "🎶 গান বাজছে...";
+
+      const foodBox = document.getElementById('food-box');
+      foodBox.style.display = (isObj && p.food) ? 'block' : 'none';
+
+      document.getElementById('next-btn').style.display =
+        (index < list.length - 1) ? 'block' : 'none';
+
+      document.getElementById('screen-route').style.display = 'none';
+      document.getElementById('screen-travel').style.display = 'none';
+
+      const paraScreen = document.getElementById('screen-para');
+      paraScreen.style.display = 'block';
+
+      if (withZoom) {
+        paraScreen.classList.remove('zoom-in');
+        void paraScreen.offsetWidth;
+        paraScreen.classList.add('zoom-in');
+      }
+    }
+
+    function goToNextPara() {
+      const list = routes[currentRouteKey].paras;
+      if (currentIndex >= list.length - 1) return;
+
+      if (navigator.vibrate) { navigator.vibrate(80); }
+      document.getElementById('para-audio').pause();
+
+      const nextP = list[currentIndex + 1];
+      const nextName = (typeof nextP === "string") ? nextP : nextP.name;
+      document.getElementById('travel-text').innerText = "➡ " + nextName + "-এর দিকে যাচ্ছি...";
+
+      const dot = document.getElementById('travel-dot');
+      dot.style.animation = 'none';
+      void dot.offsetWidth;
+      dot.style.animation = 'travelMove 0.9s ease-in-out forwards';
+
+      document.getElementById('screen-para').style.display = 'none';
+      document.getElementById('screen-travel').style.display = 'block';
+
+      setTimeout(function() {
+        if (navigator.vibrate) { navigator.vibrate(150); }
+        openParaAt(currentIndex + 1, true);
+      }, 900);
+    }
+
+    function closePara() {
+      document.getElementById('para-audio').pause();
+      document.getElementById('screen-para').classList.remove('zoom-in');
+      document.getElementById('screen-para').style.display = 'none';
+      document.getElementById('screen-route').style.display = 'block';
+    }
+
+    function goBack() {
+      document.getElementById('screen-route').style.display = 'none';
+      document.getElementById('screen-map').style.display = 'block';
+    }
+  </script>
+
+</body>
+</html>
